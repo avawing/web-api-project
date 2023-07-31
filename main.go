@@ -1,104 +1,115 @@
 package main
 
 import (
-	"fmt"
+	"awesomeProject/models"
+	"log"
 	"net/http"
+	"strconv"
 )
 import "github.com/gin-gonic/gin"
 
-type User struct {
-	ID           string `json:"id"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	Email        string `json:"email"`
-	HasLoan      bool   `json:"has_loan"`
-	HasOtherLoan bool   `json:"has_other_loan"`
-}
-
-//type Users struct {
-//	Users []User `json:"users"`
-//}
-
-var users = []User{
-	{ID: "1", FirstName: "Blue Train", LastName: "John Coltrane", Email: "Blue@Trane.com", HasLoan: false, HasOtherLoan: false},
-	{ID: "2", FirstName: "Bob Train", LastName: "John Warmtrane", Email: "Bob@Trane.com", HasLoan: true, HasOtherLoan: false},
-	{ID: "3", FirstName: "Borg Train", LastName: "Johntrane", Email: "Borg@Trane.com", HasLoan: true, HasOtherLoan: true},
+func checkErr(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
-	router := gin.Default()
-	router.GET("/users", getUsers)
-	router.POST("/users", postUser)
-	router.GET("/user/:id", getUser)
-	router.PUT("/user/:id", updateUser)
-	router.DELETE("/user/:id", deleteUser)
+	r := gin.Default()
 
-	if err := router.Run("localhost:8080"); err != nil {
-		fmt.Println(err)
-		return
+	// API v1
+	v1 := r.Group("/api/v1")
+	{
+		v1.GET("users", getUsers)
+		v1.GET("users/:id", getUser)
+		v1.POST("users", createUser)
+		v1.PUT("users/:id", updateUser)
+		v1.DELETE("users/:id", deleteUser)
 	}
+
+	// By default it serves on :8080 unless a
+	// PORT environment variable was defined.
+	r.Run()
 }
 
 func getUsers(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, users)
-}
+	users, err := models.GetUsers(10)
+	checkErr(err)
 
-func postUser(c *gin.Context) {
-	var newUser User
-
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
-	if err := c.BindJSON(&newUser); err != nil {
+	if users == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No Records Found"})
 		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": users})
 	}
-
-	// Add the new album to the slice.
-	users = append(users, newUser)
-	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
 func getUser(c *gin.Context) {
-	var user User
 	id := c.Param("id")
-	for _, u := range users {
-		if u.ID == id {
-			user = u
-		}
+
+	user, err := models.GetUserById(id)
+	checkErr(err)
+	// if the name is blank we can assume nothing is found
+	if user.FirstName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No Records Found"})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": user})
 	}
-	c.IndentedJSON(http.StatusOK, user)
 }
 
-func updateUser(c *gin.Context) {
-	var updatedUser User
+func createUser(c *gin.Context) {
+	var json models.User
 
-	if err := c.BindJSON(&updatedUser); err != nil {
+	if err := c.ShouldBindJSON(&json); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	id := c.Param("id")
-	for _, u := range users {
-		if u.ID == id {
-			u = updatedUser
-		}
+	success, err := models.AddUser(json)
+
+	if success {
+		c.JSON(http.StatusOK, gin.H{"message": "Success"})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
-	c.IndentedJSON(http.StatusAccepted, updatedUser)
+}
+
+func updateUser(c *gin.Context) {
+	var json models.User
+
+	if err := c.ShouldBindJSON(&json); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId, err := strconv.Atoi(c.Param("id"))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+	}
+
+	success, err := models.UpdateUser(json, userId)
+
+	if success {
+		c.JSON(http.StatusOK, gin.H{"message": "Success"})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
 }
 
 func deleteUser(c *gin.Context) {
-	id := c.Param("id")
-	newUsers := make([]User, len(users)-1)
-	k := 0
+	userId, err := strconv.Atoi(c.Param("id"))
 
-	for i := 0; i < len(users); i++ {
-		if users[i].ID != id {
-			newUsers[i] = users[k]
-			k++
-		} else {
-			k++
-		}
-		i++
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 	}
-	users = newUsers
 
-	c.IndentedJSON(http.StatusNoContent, "Deleted")
+	success, err := models.DeleteUser(userId)
+
+	if success {
+		c.JSON(http.StatusOK, gin.H{"message": "Success"})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
 }
