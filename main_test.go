@@ -124,30 +124,15 @@ func BenchmarkCreateUser(b *testing.B) {
 }
 
 func BenchmarkUpdateUser(b *testing.B) {
-	users := []models.User{
-		{
-			FirstName:    "Bobbly",
-			LastName:     "Bobble",
-			Email:        "bob@bob.com",
-			HasLoan:      false,
-			HasOtherLoan: true,
-		},
-		{
-			FirstName:    "Bobberella",
-			LastName:     "Bobble",
-			Email:        "bobtastic@bob.com",
-			HasLoan:      true,
-			HasOtherLoan: true,
-		},
-		{
-			FirstName:    "Bo",
-			LastName:     "Bobble",
-			Email:        "bo@bob.com",
-			HasLoan:      false,
-			HasOtherLoan: true,
-		},
+	user := models.User{
+
+		FirstName:    "Bobbly",
+		LastName:     "Bobble",
+		Email:        "bob@bob.com",
+		HasLoan:      false,
+		HasOtherLoan: true,
 	}
-	for _, user := range users {
+	for i := 0; i < 35000; i++ {
 		writer := makeRequest("PUT", "/api/v1/users/1", user)
 		assert.Equal(b, http.StatusAccepted, writer.Code)
 	}
