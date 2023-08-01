@@ -92,3 +92,63 @@ func TestGetUser(t *testing.T) {
 	writer := makeRequest("GET", "/api/v1/users/1", models.User{})
 	assert.Equal(t, http.StatusOK, writer.Code)
 }
+
+func BenchmarkCreateUser(b *testing.B) {
+	users := []models.User{
+		{
+			FirstName:    "Bobbly",
+			LastName:     "Bobble",
+			Email:        "bob@bob.com",
+			HasLoan:      false,
+			HasOtherLoan: true,
+		},
+		{
+			FirstName:    "Bobberella",
+			LastName:     "Bobble",
+			Email:        "bobtastic@bob.com",
+			HasLoan:      true,
+			HasOtherLoan: true,
+		},
+		{
+			FirstName:    "Bo",
+			LastName:     "Bobble",
+			Email:        "bo@bob.com",
+			HasLoan:      false,
+			HasOtherLoan: true,
+		},
+	}
+	for _, user := range users {
+		writer := makeRequest("POST", "/api/v1/users", user)
+		assert.Equal(b, http.StatusOK, writer.Code)
+	}
+}
+
+func BenchmarkUpdateUser(b *testing.B) {
+	users := []models.User{
+		{
+			FirstName:    "Bobbly",
+			LastName:     "Bobble",
+			Email:        "bob@bob.com",
+			HasLoan:      false,
+			HasOtherLoan: true,
+		},
+		{
+			FirstName:    "Bobberella",
+			LastName:     "Bobble",
+			Email:        "bobtastic@bob.com",
+			HasLoan:      true,
+			HasOtherLoan: true,
+		},
+		{
+			FirstName:    "Bo",
+			LastName:     "Bobble",
+			Email:        "bo@bob.com",
+			HasLoan:      false,
+			HasOtherLoan: true,
+		},
+	}
+	for _, user := range users {
+		writer := makeRequest("PUT", "/api/v1/users/1", user)
+		assert.Equal(b, http.StatusAccepted, writer.Code)
+	}
+}
