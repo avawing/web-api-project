@@ -19,16 +19,17 @@ func ConnectDatabase() error {
 }
 
 type User struct {
-	Id        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	IpAddress string `json:"ip_address"`
+	Id           int    `json:"id"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Email        string `json:"email"`
+	HasLoan      bool   `json:"has_loan"`
+	HasOtherLoan bool   `json:"has_other_loan"`
 }
 
 func GetUsers(count int) ([]User, error) {
 
-	rows, err := DB.Query("SELECT id, first_name, last_name, email, ip_address from people LIMIT " + strconv.Itoa(count))
+	rows, err := DB.Query("SELECT * from users LIMIT " + strconv.Itoa(count))
 
 	if err != nil {
 		return nil, err
@@ -40,7 +41,7 @@ func GetUsers(count int) ([]User, error) {
 
 	for rows.Next() {
 		singleUser := User{}
-		err = rows.Scan(&singleUser.Id, &singleUser.FirstName, &singleUser.LastName, &singleUser.Email, &singleUser.IpAddress)
+		err = rows.Scan(&singleUser.Id, &singleUser.FirstName, &singleUser.LastName, &singleUser.Email, &singleUser.HasLoan, &singleUser.HasOtherLoan)
 
 		if err != nil {
 			return nil, err
@@ -60,7 +61,7 @@ func GetUsers(count int) ([]User, error) {
 
 func GetUserById(id string) (User, error) {
 
-	stmt, err := DB.Prepare("SELECT id, first_name, last_name, email, ip_address from people WHERE id = ?")
+	stmt, err := DB.Prepare("SELECT * from users WHERE id = ?")
 
 	if err != nil {
 		return User{}, err
@@ -68,7 +69,7 @@ func GetUserById(id string) (User, error) {
 
 	user := User{}
 
-	sqlErr := stmt.QueryRow(id).Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.IpAddress)
+	sqlErr := stmt.QueryRow(id).Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.HasLoan, &user.HasOtherLoan)
 
 	if sqlErr != nil {
 		if sqlErr == sql.ErrNoRows {
@@ -86,7 +87,7 @@ func AddUser(newUser User) (bool, error) {
 		return false, err
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO people (first_name, last_name, email, ip_address) VALUES (?, ?, ?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO users (first_name, last_name, email, has_loan, has_other_loan) VALUES (?, ?, ?, ?, ?)")
 
 	if err != nil {
 		return false, err
@@ -94,7 +95,7 @@ func AddUser(newUser User) (bool, error) {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(newUser.FirstName, newUser.LastName, newUser.Email, newUser.IpAddress)
+	_, err = stmt.Exec(newUser.FirstName, newUser.LastName, newUser.Email, newUser.HasLoan, newUser.HasOtherLoan)
 
 	if err != nil {
 		return false, err
@@ -112,7 +113,7 @@ func UpdateUser(updatedUser User, id int) (bool, error) {
 		return false, err
 	}
 
-	stmt, err := tx.Prepare("UPDATE people SET first_name = ? last_name = ? email = ? ip_address = ? WHERE Id = ?")
+	stmt, err := tx.Prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, has_loan = ?, has_other_loan = ? WHERE Id = ?")
 
 	if err != nil {
 		return false, err
@@ -120,7 +121,7 @@ func UpdateUser(updatedUser User, id int) (bool, error) {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(updatedUser.FirstName, updatedUser.LastName, updatedUser.Email, updatedUser.IpAddress, updatedUser.Id)
+	_, err = stmt.Exec(updatedUser.FirstName, updatedUser.LastName, updatedUser.Email, updatedUser.HasLoan, updatedUser.HasOtherLoan, updatedUser.Id)
 
 	if err != nil {
 		return false, err
@@ -139,7 +140,7 @@ func DeleteUser(userId int) (bool, error) {
 		return false, err
 	}
 
-	stmt, err := DB.Prepare("DELETE from people where id = ?")
+	stmt, err := DB.Prepare("DELETE from users where id = ?")
 
 	if err != nil {
 		return false, err

@@ -8,7 +8,7 @@ import (
 )
 import "github.com/gin-gonic/gin"
 
-func checkErr(err error) {
+func CheckErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,11 +20,11 @@ func main() {
 	// API v1
 	v1 := r.Group("/api/v1")
 	{
-		v1.GET("users", getUsers)
-		v1.GET("users/:id", getUser)
-		v1.POST("users", createUser)
-		v1.PUT("users/:id", updateUser)
-		v1.DELETE("users/:id", deleteUser)
+		v1.GET("users", GetUsers)
+		v1.GET("users/:id", GetUser)
+		v1.POST("users", CreateUser)
+		v1.PUT("users/:id", UpdateUser)
+		v1.DELETE("users/:id", DeleteUser)
 	}
 
 	// By default it serves on :8080 unless a
@@ -32,9 +32,9 @@ func main() {
 	r.Run()
 }
 
-func getUsers(c *gin.Context) {
+func GetUsers(c *gin.Context) {
 	users, err := models.GetUsers(10)
-	checkErr(err)
+	CheckErr(err)
 
 	if users == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No Records Found"})
@@ -44,11 +44,11 @@ func getUsers(c *gin.Context) {
 	}
 }
 
-func getUser(c *gin.Context) {
+func GetUser(c *gin.Context) {
 	id := c.Param("id")
 
 	user, err := models.GetUserById(id)
-	checkErr(err)
+	CheckErr(err)
 	// if the name is blank we can assume nothing is found
 	if user.FirstName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No Records Found"})
@@ -58,7 +58,7 @@ func getUser(c *gin.Context) {
 	}
 }
 
-func createUser(c *gin.Context) {
+func CreateUser(c *gin.Context) {
 	var json models.User
 
 	if err := c.ShouldBindJSON(&json); err != nil {
@@ -75,7 +75,7 @@ func createUser(c *gin.Context) {
 	}
 }
 
-func updateUser(c *gin.Context) {
+func UpdateUser(c *gin.Context) {
 	var json models.User
 
 	if err := c.ShouldBindJSON(&json); err != nil {
@@ -92,13 +92,13 @@ func updateUser(c *gin.Context) {
 	success, err := models.UpdateUser(json, userId)
 
 	if success {
-		c.JSON(http.StatusOK, gin.H{"message": "Success"})
+		c.JSON(http.StatusAccepted, gin.H{"message": "Success"})
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 }
 
-func deleteUser(c *gin.Context) {
+func DeleteUser(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
